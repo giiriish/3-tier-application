@@ -1,32 +1,37 @@
-- name: Install Node.js, PM2 and MariaDB 10.5 on App Tier
+- name: Install Node.js, PM2 and MariaDB on App Tier
   hosts: app_servers
   become: yes
 
   tasks:
 
+    # -----------------------------
+    # Install required packages
+    # -----------------------------
     - name: Install required packages
-      apt:
+      yum:
         name:
           - curl
-          - software-properties-common
+          - git
         state: present
-        update_cache: yes
 
     # -----------------------------
-    # Install MariaDB 10.5
+    # Create directory for ec2-user
     # -----------------------------
-    - name: Add MariaDB 10.5 repository
-      shell: |
-        apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
-        add-apt-repository 'deb [arch=amd64] http://mirror.jaleco.com/mariadb/repo/10.5/ubuntu focal main'
-      args:
-        executable: /bin/bash
+    - name: Create app directory for ec2-user
+      file:
+        path: /home/ec2-user/app
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+        mode: '0755'
 
+    # -----------------------------
+    # Install MariaDB
+    # -----------------------------
     - name: Install MariaDB server
-      apt:
+      yum:
         name: mariadb-server
         state: present
-        update_cache: yes
 
     - name: Start and enable MariaDB
       service:
@@ -35,16 +40,23 @@
         enabled: yes
 
     # -----------------------------
-    # Install NVM + Node.js
+    # Install NVM (as ec2-user)
     # -----------------------------
     - name: Install NVM
+      become_user: ec2-user
       shell: |
+        cd /home/ec2-user
         curl -o- https://raw.githubusercontent.com/avizway1/aws_3tier_architecture/main/install.sh | bash
       args:
         executable: /bin/bash
 
-    - name: Install Node.js 16
+    # -----------------------------
+    # Install Node.js 16
+    # -----------------------------
+    - name: Install Node.js 16 using NVM
+      become_user: ec2-user
       shell: |
+        cd /home/ec2-user
         source ~/.bashrc
         nvm install 16
         nvm use 16
@@ -55,16 +67,21 @@
     # Install PM2
     # -----------------------------
     - name: Install PM2 globally
+      become_user: ec2-user
       shell: |
         source ~/.bashrc
         npm install -g pm2
       args:
         executable: /bin/bash
 
+    # -----------------------------
+    # Enable PM2 startup
+    # -----------------------------
     - name: Enable PM2 startup
+      become_user: ec2-user
       shell: |
         source ~/.bashrc
-        pm2 startup systemd -u {{ ansible_user }} --hp /home/{{ ansible_user }}
+        pm2 startup systemd -u ec2-user --hp /home/ec2-user
         pm2 save
       args:
         executable: /bin/bash
