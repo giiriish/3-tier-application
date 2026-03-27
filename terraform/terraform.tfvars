@@ -1,0 +1,6 @@
+vpc_id            = "vpc-08330399c25a1ac80"
+public_subnet_id  = "subnet-0044f73f41579663e"
+private_subnet_id = "subnet-03a2aef6a161072a2"
+key_name          = "guru-key"
+ami_id            = "ami-0317b0f0a0144b137"
+my_ip             = "152.58.2.207/32"

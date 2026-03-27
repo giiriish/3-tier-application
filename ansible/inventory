@@ -1,0 +1,5 @@
+[web]
+13.126.110.242 ansible_user=ec2-user
+
+[app]
+10.0.2.24 ansible_user=ec2-user

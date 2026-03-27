@@ -1,0 +1,31 @@
+- name: Web Tier Setup (Node.js + Build + Nginx)
+  hosts: app_servers
+  become: yes
+
+  tasks:
+
+   
+    # -----------------------------
+    # Build React App
+    # -----------------------------
+    - name: Install dependencies and build app
+      become_user: ec2-user
+      shell: |
+        cd /home/ec2-user/web-tier
+        source ~/.bashrc
+        npm install
+        npm run build
+      args:
+        executable: /bin/bash
+
+    # -----------------------------
+    # Install Nginx
+    # -----------------------------
+    - name: Install Nginx
+      shell: amazon-linux-extras install nginx1 -y
+
+    - name: Start and enable Nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes

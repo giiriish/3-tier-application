@@ -1,0 +1,70 @@
+- name: Install Node.js, PM2 and MariaDB 10.5 on App Tier
+  hosts: app_servers
+  become: yes
+
+  tasks:
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
+
+    # -----------------------------
+    # Install MariaDB 10.5
+    # -----------------------------
+    - name: Add MariaDB 10.5 repository
+      shell: |
+        apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
+        add-apt-repository 'deb [arch=amd64] http://mirror.jaleco.com/mariadb/repo/10.5/ubuntu focal main'
+      args:
+        executable: /bin/bash
+
+    - name: Install MariaDB server
+      apt:
+        name: mariadb-server
+        state: present
+        update_cache: yes
+
+    - name: Start and enable MariaDB
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    # -----------------------------
+    # Install NVM + Node.js
+    # -----------------------------
+    - name: Install NVM
+      shell: |
+        curl -o- https://raw.githubusercontent.com/avizway1/aws_3tier_architecture/main/install.sh | bash
+      args:
+        executable: /bin/bash
+
+    - name: Install Node.js 16
+      shell: |
+        source ~/.bashrc
+        nvm install 16
+        nvm use 16
+      args:
+        executable: /bin/bash
+
+    # -----------------------------
+    # Install PM2
+    # -----------------------------
+    - name: Install PM2 globally
+      shell: |
+        source ~/.bashrc
+        npm install -g pm2
+      args:
+        executable: /bin/bash
+
+    - name: Enable PM2 startup
+      shell: |
+        source ~/.bashrc
+        pm2 startup systemd -u {{ ansible_user }} --hp /home/{{ ansible_user }}
+        pm2 save
+      args:
+        executable: /bin/bash
