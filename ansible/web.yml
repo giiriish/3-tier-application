@@ -1,13 +1,15 @@
-- name: Install Nginx
-  hosts: web
+- name: Install MariaDB on App Tier
+  hosts: app 
   become: yes
 
   tasks:
-    - name: Install Nginx
-      shell: amazon-linux-extras install nginx1 -y
+    - name: Install MariaDB server
+      yum:
+        name: mariadb-server
+        state: present
 
-    - name: Start and enable Nginx
+    - name: Start and enable MariaDB
       service:
-        name: nginx
+        name: mariadb
         state: started
         enabled: yes
