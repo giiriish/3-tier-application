@@ -57,7 +57,7 @@ pipeline {
         }
 
         // -------------------------------
-        // Fetch IPs from Terraform
+        // Fetch IPs
         // -------------------------------
         stage('Fetch IPs') {
             steps {
@@ -82,7 +82,7 @@ pipeline {
         }
 
         // -------------------------------
-        // Create Ansible Inventory
+        // Create Inventory
         // -------------------------------
         stage('Create Inventory') {
             steps {
@@ -99,7 +99,7 @@ ${APP_IP} ansible_user=ec2-user
         }
 
         // -------------------------------
-        // Wait for EC2 (important fix)
+        // Wait for EC2
         // -------------------------------
         stage('Wait for EC2') {
             steps {
@@ -112,20 +112,22 @@ ${APP_IP} ansible_user=ec2-user
         // Run Ansible
         // -------------------------------
         stage('Run Ansible') {
-    steps {
-        withCredentials([
-            sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'KEY_FILE')
-        ]) {
-            sh """
-            cd ansible
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'KEY_FILE')
+                ]) {
+                    sh """
+                    cd ${ANSIBLE_DIR}
 
-            chmod 400 \$KEY_FILE
+                    chmod 400 \$KEY_FILE
 
-            export ANSIBLE_HOST_KEY_CHECKING=False
+                    export ANSIBLE_HOST_KEY_CHECKING=False
 
-            ansible-playbook -i inventory.ini web.yml --private-key \$KEY_FILE
-            ansible-playbook -i inventory.ini app.yml --private-key \$KEY_FILE
-            """
+                    ansible-playbook -i inventory.ini web.yml --private-key \$KEY_FILE
+                    ansible-playbook -i inventory.ini app.yml --private-key \$KEY_FILE
+                    """
+                }
+            }
         }
     }
 }
