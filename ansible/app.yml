@@ -1,5 +1,5 @@
 - name: Install MariaDB on App Tier
-  hosts: app_servers
+  hosts: app
   become: yes
 
   tasks:
