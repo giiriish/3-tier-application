@@ -13,8 +13,13 @@ pipeline {
         // -------------------------------
         stage('Terraform Init') {
             steps {
-                dir("${TF_DIR}") {
-                    sh 'terraform init'
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir("${TF_DIR}") {
+                        sh 'terraform init'
+                    }
                 }
             }
         }
@@ -24,8 +29,13 @@ pipeline {
         // -------------------------------
         stage('Terraform Plan') {
             steps {
-                dir("${TF_DIR}") {
-                    sh 'terraform plan'
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir("${TF_DIR}") {
+                        sh 'terraform plan'
+                    }
                 }
             }
         }
@@ -35,8 +45,13 @@ pipeline {
         // -------------------------------
         stage('Terraform Apply') {
             steps {
-                dir("${TF_DIR}") {
-                    sh 'terraform apply -auto-approve'
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir("${TF_DIR}") {
+                        sh 'terraform apply -auto-approve'
+                    }
                 }
             }
         }
@@ -84,7 +99,7 @@ ${APP_IP} ansible_user=ec2-user
         }
 
         // -------------------------------
-        // Wait for EC2 to be ready
+        // Wait for EC2 (important fix)
         // -------------------------------
         stage('Wait for EC2') {
             steps {
