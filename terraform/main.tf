@@ -29,31 +29,23 @@ resource "aws_security_group" "web_sg" {
   name   = "web-sg"
   vpc_id = var.vpc_id
 
-  # HTTP from External ALB
+  # SSH access (FIX)
   ingress {
-    description     = "HTTP from External ALB"
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]   # temporary (use your IP later)
+  }
+
+  # HTTP from ALB
+  ingress {
+    description     = "HTTP from ALB"
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
     security_groups = [aws_security_group.external_alb_sg.id]
   }
-
-  # HTTP from VPC
-  ingress {
-    description = "HTTP from VPC"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
-
-  ingress {
-  description = "SSH from my IP"
-  from_port   = 22
-  to_port     = 22
-  protocol    = "tcp"
-  cidr_blocks = [var.my_ip]
-}
 
   egress {
     from_port   = 0
@@ -62,6 +54,8 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+    
 
 
 # App SG
