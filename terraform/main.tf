@@ -138,7 +138,7 @@ resource "aws_security_group" "database_sg" {
 
 resource "aws_instance" "web" {
   ami           = var.ami_id
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
 
   subnet_id = var.public_subnet_id  
 
