@@ -68,7 +68,7 @@ pipeline {
                     ).trim()
 
                     def app_ip = sh(
-                        script: "cd ${TF_DIR} && terraform output -raw app_private_ip",
+                        script: "cd ${TF_DIR} && terraform output -raw app_public_ip",
                         returnStdout: true
                     ).trim()
 
