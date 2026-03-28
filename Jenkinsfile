@@ -104,7 +104,7 @@ ${APP_IP} ansible_user=ec2-user
         stage('Wait for EC2') {
             steps {
                 echo "Waiting for EC2 instances to be ready..."
-                sh 'sleep 120'
+                sh 'sleep 60'
             }
         }
 
