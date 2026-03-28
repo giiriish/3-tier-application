@@ -1,12 +1,8 @@
-- name: Install Node.js, PM2 and MariaDB on App Tier
+- name: Install MariaDB on App Tier
   hosts: app_servers
   become: yes
 
   tasks:
-
-    # -----------------------------
-    # Install MariaDB
-    # -----------------------------
     - name: Install MariaDB server
       yum:
         name: mariadb-server
