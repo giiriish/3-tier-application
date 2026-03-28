@@ -48,12 +48,12 @@ pipeline {
 
                     // Get both EC2 IPs from Terraform outputs
                     def WEB_IP = sh(
-                        script: "cd terraform && terraform output -raw web_tier_ip",
+                        script: "cd terraform && terraform output -raw web_public_ip",
                         returnStdout: true
                     ).trim()
 
                     def APP_IP = sh(
-                        script: "cd terraform && terraform output -raw app_tier_ip",
+                        script: "cd terraform && terraform output -raw app_private_ip",
                         returnStdout: true
                     ).trim()
 
