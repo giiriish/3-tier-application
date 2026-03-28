@@ -42,35 +42,53 @@ pipeline {
             }
         }
 
-        stage('Run Ansible') {
+        
+        stage('Fetch IPs') {
             steps {
                 script {
-
-                    // Get both EC2 IPs from Terraform outputs
-                    def WEB_IP = sh(
+                    env.WEB_IP = sh(
                         script: "cd terraform && terraform output -raw web_public_ip",
                         returnStdout: true
                     ).trim()
 
-                    def APP_IP = sh(
+                    env.APP_IP = sh(
                         script: "cd terraform && terraform output -raw app_private_ip",
                         returnStdout: true
                     ).trim()
 
-                    sh """
+                    echo "Web IP: ${WEB_IP}"
+                    echo "App IP: ${APP_IP}"
+                }
+            }
+        }
+
+       
+        stage('Create Inventory') {
+            steps {
+                script {
+                    writeFile file: 'ansible/inventory.ini', text: """
+[web]
+${WEB_IP} ansible_user=ec2-user
+
+[app]
+${APP_IP} ansible_user=ec2-user ansible_ssh_common_args='-o ProxyJump=ec2-user@${WEB_IP}'
+"""
+                }
+            }
+        }
+
+        
+        stage('Run Ansible') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'KEY_FILE')]) {
+                    sh '''
                     cd ansible
-                    chmod 400 ../guru-key.pem
 
-                    # Create inventory file
-                    echo "[web]" > inventory
-                    echo "$WEB_IP ansible_user=ec2-user ansible_ssh_private_key_file=../guru-key.pem" >> inventory
+                    chmod 400 $KEY_FILE
 
-                    echo "[app]" >> inventory
-                    echo "$APP_IP ansible_user=ec2-user ansible_ssh_private_key_file=../guru-key.pem" >> inventory
-
-                    # Run Ansible
-                    ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory playbook.yml
-                    """
+                    ansible-playbook -i inventory.ini web.yml --private-key $KEY_FILE
+                    ansible-playbook -i inventory.ini app.yml --private-key $KEY_FILE
+                    '''
                 }
             }
         }
