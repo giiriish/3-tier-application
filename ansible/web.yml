@@ -3,12 +3,13 @@
   become: yes
 
   tasks:
+
     - name: Install Nginx
-      yum:
+      dnf:
         name: nginx
         state: present
 
-    - name: Start and enable Nginx
+    - name: Start Nginx
       service:
         name: nginx
         state: started
