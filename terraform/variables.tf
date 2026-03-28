@@ -3,6 +3,10 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "vpc_cidr" {
+  default = "10.0.0.0/22"
+}
+
 variable "public_subnet_id" {
   description = "Public Subnet ID (for Web Tier)"
   type        = string
