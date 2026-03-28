@@ -1,14 +1,15 @@
 - name: Install MariaDB on App Tier
-  hosts: app 
+  hosts: app
   become: yes
 
   tasks:
-    - name: Install MariaDB server
-      yum:
+
+    - name: Install MariaDB
+      dnf:
         name: mariadb-server
         state: present
 
-    - name: Start and enable MariaDB
+    - name: Start MariaDB
       service:
         name: mariadb
         state: started
