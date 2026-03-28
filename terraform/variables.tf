@@ -3,31 +3,32 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "vpc_cidr" {
-  default = "10.0.0.0/22"
-}
-
 variable "public_subnet_id" {
-  description = "Public Subnet ID (for Web Tier)"
+  description = "Public Subnet ID"
   type        = string
 }
 
 variable "private_subnet_id" {
-  description = "Private Subnet ID (for App Tier)"
+  description = "Private Subnet ID"
   type        = string
 }
 
 variable "key_name" {
-  description = "EC2 Key Pair Name"
+  description = "Key pair"
   type        = string
 }
 
 variable "ami_id" {
-  description = "AMI ID for EC2 instances"
+  description = "AMI ID"
   type        = string
 }
 
 variable "my_ip" {
-  description = "Your laptop public IP for SSH access"
+  description = "Your IP"
   type        = string
+}
+
+variable "vpc_cidr" {
+  description = "VPC CIDR"
+  default     = "10.0.0.0/22"
 }
