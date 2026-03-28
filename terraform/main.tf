@@ -146,7 +146,6 @@ resource "aws_instance" "app" {
   subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-  associate_public_ip_address = true
 
   tags = {
     Name = "app-tier"
