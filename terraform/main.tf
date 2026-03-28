@@ -124,7 +124,7 @@ resource "aws_security_group" "database_sg" {
 
 
 resource "aws_instance" "web" {
-  ami                    = var.ami
+  ami                    = var.ami_id
   instance_type          = "t3.micro"
   subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
@@ -139,7 +139,7 @@ resource "aws_instance" "web" {
 
 
 resource "aws_instance" "app" {
-  ami                    = var.ami
+  ami                    = var.ami_id
   instance_type          = "t3.micro"
   subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [aws_security_group.app_sg.id]
