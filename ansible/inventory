@@ -1,5 +1,5 @@
 [web]
-13.235.132.248 ansible_user=ec2-user
+13.201.16.164 ansible_user=ec2-user
 
 [app]
-10.0.2.14 ansible_user=ec2-user ansible_ssh_common_args='-o ProxyJump=ec2-user@35.154.158.94'
+10.0.2.26 ansible_user=ec2-user ansible_ssh_common_args='-o ProxyJump=ec2-user@35.154.158.94'
