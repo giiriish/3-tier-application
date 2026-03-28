@@ -112,20 +112,20 @@ ${APP_IP} ansible_user=ec2-user
         // Run Ansible
         // -------------------------------
         stage('Run Ansible') {
-            steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'KEY_FILE')
-                ]) {
-                    sh """
-                    cd ${ANSIBLE_DIR}
+    steps {
+        withCredentials([
+            sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'KEY_FILE')
+        ]) {
+            sh """
+            cd ansible
 
-                    chmod 400 \$KEY_FILE
+            chmod 400 \$KEY_FILE
 
-                    ansible-playbook -i inventory.ini web.yml --private-key \$KEY_FILE
-                    ansible-playbook -i inventory.ini app.yml --private-key \$KEY_FILE
-                    """
-                }
-            }
+            export ANSIBLE_HOST_KEY_CHECKING=False
+
+            ansible-playbook -i inventory.ini web.yml --private-key \$KEY_FILE
+            ansible-playbook -i inventory.ini app.yml --private-key \$KEY_FILE
+            """
         }
     }
 }
