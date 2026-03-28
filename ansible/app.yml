@@ -5,12 +5,12 @@
   tasks:
 
     - name: Update packages
-      yum:
+      dnf:
         name: "*"
         state: latest
 
     - name: Install MariaDB
-      yum:
+      dnf:
         name: mariadb105-server
         state: present
 
