@@ -1,8 +1,4 @@
 
-variable "vpc_cidr" {
-  default = "10.0.0.0/22"
-}
-
 # External ALB SG
 
 resource "aws_security_group" "external_alb_sg" {
