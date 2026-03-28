@@ -104,7 +104,7 @@ resource "aws_security_group" "internal_alb_sg" {
 
 # Database SG
 
-resource "aws_security_group" "db_sg" {
+resource "aws_security_group" "database_sg"
   name   = "database-sg"
   vpc_id = var.vpc_id
 
