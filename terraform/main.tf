@@ -160,13 +160,14 @@ resource "aws_instance" "web" {
 
 # App Tier EC2
 
-
 resource "aws_instance" "app" {
-  ami                    = var.ami_id
-  instance_type          = "t3.micro"
-  subnet_id              = var.private_subnet_id
-  vpc_security_group_ids = [aws_security_group.app_sg.id]
+  ami                         = var.ami_id
+  instance_type               = "t3.micro"
+  subnet_id                   = var.public_subnet_id   # ✅ IMPORTANT
+  key_name                    = var.key_name
+  associate_public_ip_address = true                  # ✅ IMPORTANT
 
+  vpc_security_group_ids = [aws_security_group.app_sg.id]
 
   tags = {
     Name = "app-tier"
