@@ -129,6 +129,8 @@ resource "aws_instance" "web" {
   subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
+  associate_public_ip_address = true
+
   tags = {
     Name = "web-tier"
   }
@@ -143,6 +145,8 @@ resource "aws_instance" "app" {
   instance_type          = "t3.micro"
   subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [aws_security_group.app_sg.id]
+
+  associate_public_ip_address = true
 
   tags = {
     Name = "app-tier"
