@@ -1,15 +1,15 @@
-- name: Install MariaDB on App Tier
-  hosts: app 
+- name: Install Nginx on Web Tier
+  hosts: web
   become: yes
 
   tasks:
-    - name: Install MariaDB server
+    - name: Install Nginx
       yum:
-        name: mariadb-server
+        name: nginx
         state: present
 
-    - name: Start and enable MariaDB
+    - name: Start and enable Nginx
       service:
-        name: mariadb
+        name: nginx
         state: started
         enabled: yes
