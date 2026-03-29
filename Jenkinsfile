@@ -8,9 +8,9 @@ pipeline {
 
     stages {
 
-        // -------------------------------
+        
         // Terraform Init
-        // -------------------------------
+        
         stage('Terraform Init') {
             steps {
                 withCredentials([
@@ -24,9 +24,9 @@ pipeline {
             }
         }
 
-        // -------------------------------
+       
         // Terraform Plan
-        // -------------------------------
+        
         stage('Terraform Plan') {
             steps {
                 withCredentials([
@@ -40,9 +40,9 @@ pipeline {
             }
         }
 
-        // -------------------------------
+       
         // Terraform Apply
-        // -------------------------------
+        
         stage('Terraform Apply') {
             steps {
                 withCredentials([
@@ -56,9 +56,9 @@ pipeline {
             }
         }
 
-        // -------------------------------
+        
         // Fetch IPs
-        // -------------------------------
+        
         stage('Fetch IPs') {
             steps {
                 script {
@@ -81,9 +81,9 @@ pipeline {
             }
         }
 
-        // -------------------------------
+        
         // Create Inventory
-        // -------------------------------
+       
         stage('Create Inventory') {
             steps {
                 script {
@@ -98,9 +98,9 @@ ${APP_IP} ansible_user=ec2-user
             }
         }
 
-        // -------------------------------
+        
         // Wait for EC2
-        // -------------------------------
+        
         stage('Wait for EC2') {
             steps {
                 echo "Waiting for EC2 instances to be ready..."
@@ -108,9 +108,9 @@ ${APP_IP} ansible_user=ec2-user
             }
         }
 
-        // -------------------------------
+        -
         // Run Ansible
-        // -------------------------------
+        
         stage('Run Ansible') {
             steps {
                 withCredentials([
