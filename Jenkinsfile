@@ -108,7 +108,7 @@ ${APP_IP} ansible_user=ec2-user
             }
         }
 
-        -
+        
         // Run Ansible
         
         stage('Run Ansible') {
