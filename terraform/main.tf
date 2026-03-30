@@ -1,173 +1,196 @@
 
-# External ALB SG
+########################################
+# EXTERNAL ALB SG
+########################################
 
 resource "aws_security_group" "external_alb_sg" {
-  name        = "external-alb-sg"
-  description = "Allow HTTP from internet"
-  vpc_id      = var.vpc_id
+  name_prefix = "external-alb-sg-"
+  vpc_id      = data.aws_vpc.existing_vpc.id
 
   ingress {
-    description = "HTTP from anywhere"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+ 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  egress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  tags = {
+    Name = "external-alb-sg"
   }
 }
 
-
-# Web SG
+########################################
+# WEB TIER SG
+########################################
 
 resource "aws_security_group" "web_sg" {
-  name   = "web-sg"
-  vpc_id = var.vpc_id
+  name_prefix = "web-tier-sg-"
+  vpc_id      = data.aws_vpc.existing_vpc.id
 
-  # SSH access (FIX)
+  # SSH
   ingress {
-    description = "SSH access"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]   # temporary (use your IP later)
+    cidr_blocks = [var.my_ip]
   }
 
-  # HTTP from ALB
+  # From External ALB
   ingress {
-    description     = "HTTP from ALB"
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
     security_groups = [aws_security_group.external_alb_sg.id]
   }
 
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.external_alb_sg.id]
+  }
+
+ 
+  # To Internal LB
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 4000
+    to_port         = 4000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.internal_alb_sg.id]
+  }
+
+  tags = {
+    Name = "web-tier-sg"
   }
 }
 
-    
-
-
-# App SG
-
-resource "aws_security_group" "app_sg" {
-  name   = "app-sg"
-  vpc_id = var.vpc_id
-
-  
-  ingress {
-    description = "SSH access"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]   
-  }
-
-  # App port
-  ingress {
-    description = "App port"
-    from_port   = 4000
-    to_port     = 4000
-    protocol    = "tcp"
-    cidr_blocks = ["var.vpc_cidr"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-
-# Internal ALB SG
+########################################
+# INTERNAL ALB SG
+########################################
 
 resource "aws_security_group" "internal_alb_sg" {
-  name   = "internal-alb-sg"
-  vpc_id = var.vpc_id
+  name_prefix = "internal-alb-sg-"
+  vpc_id      = data.aws_vpc.existing_vpc.id
 
+  # From Web Tier
   ingress {
-    description = "HTTP from VPC"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
+    from_port       = 4000
+    to_port         = 4000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
   }
 
+  # To App Tier
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 4000
+    to_port         = 4000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+
+  tags = {
+    Name = "internal-alb-sg"
   }
 }
 
+########################################
+# APP TIER SG
+########################################
 
-# Database SG
+resource "aws_security_group" "app_sg" {
+  name_prefix = "app-tier-sg-"
+  vpc_id      = data.aws_vpc.existing_vpc.id
 
-resource "aws_security_group" "database_sg" {
-  name   = "database-sg"
-  vpc_id = var.vpc_id
-
+  # From Internal LB
   ingress {
-    description = "MySQL access"
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
+    from_port       = 4000
+    to_port         = 4000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.internal_alb_sg.id]
   }
 
+  # To DB
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.db_sg.id]
+  }
+
+  tags = {
+    Name = "app-tier-sg"
   }
 }
 
+########################################
+# DATABASE SG
+########################################
 
- # Web Tier EC2
+resource "aws_security_group" "db_sg" {
+  name_prefix = "db-tier-sg-"
+  vpc_id      = data.aws_vpc.existing_vpc.id
 
+  ingress {
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+
+  tags = {
+    Name = "db-tier-sg"
+  }
+}
+
+########################################
+# WEB INSTANCE
+########################################
 
 resource "aws_instance" "web" {
   ami           = var.ami_id
-  instance_type = "t3.micro"
+  instance_type = var.instance_type
+  key_name      = var.key_name
 
-  subnet_id = var.public_subnet_id  
-
-  associate_public_ip_address = true
-
+  subnet_id              = data.aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  key_name = var.key_name
+  associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "web-tier"
   }
 }
 
-
-# App Tier EC2
+########################################
+# APP INSTANCE
+########################################
 
 resource "aws_instance" "app" {
-  ami                         = var.ami_id
-  instance_type               = "t3.micro"
-  subnet_id                   = var.private_subnet_id   
-  key_name                    = var.key_name
-  associate_public_ip_address = false                 
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  key_name      = var.key_name
 
+  subnet_id              = data.aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.app_sg.id]
+
+  associate_public_ip_address = false
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "app-tier"
