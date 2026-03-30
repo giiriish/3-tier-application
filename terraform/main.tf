@@ -146,7 +146,7 @@ resource "aws_security_group" "db_sg" {
   tags = {
     Name = "app-tier-sg"
   }
-
+}
 
 ########################################
 # WEB INSTANCE
