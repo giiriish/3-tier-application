@@ -136,6 +136,17 @@ resource "aws_security_group" "db_sg" {
     security_groups = [aws_security_group.app_sg.id]
   }
 }
+egress {
+    from_port       = 4000
+    to_port         = 4000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+
+  tags = {
+    Name = "app-tier-sg"
+  }
+}
 
 
 ########################################
