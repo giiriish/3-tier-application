@@ -32,27 +32,3 @@ variable "vpc_cidr" {
   description = "VPC CIDR"
   default     = "10.0.0.0/22"
 }
-resource "aws_security_group" "web_sg" {
-  name   = "web-sg"
-  vpc_id = var.vpc_id
-}
-
-resource "aws_security_group" "app_sg" {
-  name   = "app-sg"
-  vpc_id = var.vpc_id
-}
-
-resource "aws_security_group" "db_sg" {
-  name   = "db-sg"
-  vpc_id = var.vpc_id
-}
-
-resource "aws_security_group" "external_alb_sg" {
-  name   = "external-alb-sg"
-  vpc_id = var.vpc_id
-}
-
-resource "aws_security_group" "internal_alb_sg" {
-  name   = "internal-alb-sg"
-  vpc_id = var.vpc_id
-}
