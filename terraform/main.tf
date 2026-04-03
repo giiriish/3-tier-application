@@ -4,7 +4,7 @@
 
 resource "aws_instance" "web" {
   ami           = var.ami_id
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   key_name      = var.key_name
 
   subnet_id              = var.public_subnet_id
@@ -23,7 +23,7 @@ resource "aws_instance" "web" {
 
 resource "aws_instance" "app" {
   ami           = var.ami_id
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   key_name      = var.key_name
 
   subnet_id              = var.private_subnet_id
