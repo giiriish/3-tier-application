@@ -30,5 +30,15 @@ variable "my_ip" {
 
 variable "vpc_cidr" {
   description = "VPC CIDR"
-  default     = "10.0.0.0/22"
+  default     = "192.168.0.0/25"
+}
+
+variable "web_sg" {
+  description = "web sg"
+  type        = string
+}
+
+variable "app_sg" {
+  description = "app sg"
+  type        = string
 }
