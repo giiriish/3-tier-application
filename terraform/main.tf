@@ -1,15 +1,14 @@
-
 ########################################
 # WEB INSTANCE
 ########################################
 
 resource "aws_instance" "web" {
   ami           = var.ami_id
-  instance_type = var.instance_type
+  instance_type = "t2.micro"
   key_name      = var.key_name
 
-  subnet_id              = data.aws_subnet.public_subnet.id
-  vpc_security_group_ids = [aws_security_group.web_sg.id]
+  subnet_id              = var.public_subnet_id
+  vpc_security_group_ids = [var.web_sg]
 
   associate_public_ip_address = true
 
@@ -24,11 +23,11 @@ resource "aws_instance" "web" {
 
 resource "aws_instance" "app" {
   ami           = var.ami_id
-  instance_type = var.instance_type
+  instance_type = "t2.micro"
   key_name      = var.key_name
 
-  subnet_id              = data.aws_subnet.private_subnet.id
-  vpc_security_group_ids = [aws_security_group.app_sg.id]
+  subnet_id              = var.private_subnet_id
+  vpc_security_group_ids = [var.app_sg]
 
   associate_public_ip_address = false
 
