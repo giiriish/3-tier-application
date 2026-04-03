@@ -34,11 +34,11 @@ variable "vpc_cidr" {
 }
 
 variable "web_sg" {
-  description = "web sg"
+  description = "Web sg"
   type        = string
 }
 
 variable "app_sg" {
-  description = "app sg"
+  description = "App sg"
   type        = string
 }
