@@ -4,13 +4,18 @@ pipeline {
     environment {
         TF_DIR = 'terraform'
         ANSIBLE_DIR = 'ansible'
+        AWS_DEFAULT_REGION = 'us-east-1'
+    }
+
+    options {
+        timestamps()
     }
 
     stages {
 
-        
+        // ================================
         // Terraform Init
-        
+        // ================================
         stage('Terraform Init') {
             steps {
                 withCredentials([
@@ -18,15 +23,19 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     dir("${TF_DIR}") {
-                        sh 'terraform init'
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform init
+                        '''
                     }
                 }
             }
         }
 
-       
+        // ================================
         // Terraform Plan
-        
+        // ================================
         stage('Terraform Plan') {
             steps {
                 withCredentials([
@@ -34,15 +43,19 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     dir("${TF_DIR}") {
-                        sh 'terraform plan'
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform plan
+                        '''
                     }
                 }
             }
         }
 
-       
+        // ================================
         // Terraform Apply
-        
+        // ================================
         stage('Terraform Apply') {
             steps {
                 withCredentials([
@@ -50,16 +63,20 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     dir("${TF_DIR}") {
-                        sh 'terraform apply -auto-approve'
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform apply -auto-approve
+                        '''
                     }
                 }
             }
         }
 
-        
-        // Fetch IPs
-        
-        stage('Fetch IPs') {
+        // ================================
+        // Fetch Outputs (IP + Instance ID)
+        // ================================
+        stage('Fetch Details') {
             steps {
                 script {
                     def web_ip = sh(
@@ -67,23 +84,23 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    def app_ip = sh(
-                        script: "cd ${TF_DIR} && terraform output -raw app_private_ip",
+                    def app_id = sh(
+                        script: "cd ${TF_DIR} && terraform output -raw app_instance_id",
                         returnStdout: true
                     ).trim()
 
                     env.WEB_IP = web_ip
-                    env.APP_IP = app_ip
+                    env.APP_ID = app_id
 
                     echo "Web IP: ${WEB_IP}"
-                    echo "App IP: ${APP_IP}"
+                    echo "App Instance ID: ${APP_ID}"
                 }
             }
         }
 
-        
-        // Create Inventory
-       
+        // ================================
+        // Create Ansible Inventory
+        // ================================
         stage('Create Inventory') {
             steps {
                 script {
@@ -92,42 +109,50 @@ pipeline {
 ${WEB_IP} ansible_user=ec2-user
 
 [app]
-${APP_IP} ansible_user=ec2-user
+${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION} ansible_aws_ssm_bucket_name=last-one-1 ansible_python_interpreter=/usr/bin/python3
 """
                 }
             }
         }
 
-        
-        // Wait for EC2
-        
+        // ================================
+        // Wait for EC2 Ready
+        // ================================
         stage('Wait for EC2') {
             steps {
-                echo "Waiting for EC2 instances to be ready..."
+                echo "Waiting for EC2 instances..."
                 sh 'sleep 60'
             }
         }
 
-        
-        // Run Ansible
-        
+        // ================================
+        // Run Ansible (Web via SSH, App via SSM)
+        // ================================
         stage('Run Ansible') {
             steps {
                 withCredentials([
-                    sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'KEY_FILE')
+                    sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'KEY_FILE'),
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh """
                     cd ${ANSIBLE_DIR}
 
                     chmod 400 \$KEY_FILE
-
                     export ANSIBLE_HOST_KEY_CHECKING=False
 
+                    echo "===== Web Tier (SSH) ====="
                     ansible-playbook -i inventory.ini web.yml --private-key \$KEY_FILE
-                    ansible-playbook -i inventory.ini app.yml --private-key \$KEY_FILE
+
+                    echo "===== App Tier (SSM) ====="
+                    export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                    export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                    export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+
+                    ansible-playbook -i inventory.ini mysql.yml
                     """
                 }
             }
         }
-    }
+
 }
