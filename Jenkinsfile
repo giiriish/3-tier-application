@@ -114,13 +114,19 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     sh '''
                     cd ansible
 
-                    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+                    # FORCE correct PATH (IMPORTANT)
+                    export PATH=/usr/bin:/usr/local/bin:/bin:$PATH
 
+                    # FORCE plugin path (CRITICAL FIX)
+                    export AWS_SESSION_MANAGER_PLUGIN=/usr/bin/session-manager-plugin
+
+                    # Install dependencies
                     pip3 install --user boto3 botocore >/dev/null 2>&1 || true
                     ansible-galaxy collection install amazon.aws >/dev/null 2>&1 || true
 
-                    echo "Using plugin at:"
+                    echo "Plugin location:"
                     which session-manager-plugin || true
+                    ls -l /usr/bin/session-manager-plugin || true
 
                     chmod 400 $KEY_FILE
                     export ANSIBLE_HOST_KEY_CHECKING=False
