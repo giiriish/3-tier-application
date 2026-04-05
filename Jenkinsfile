@@ -118,7 +118,7 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     export PATH=/usr/bin:/usr/local/bin:/bin:$PATH
 
                     # FORCE plugin path (CRITICAL FIX)
-                    export AWS_SESSION_MANAGER_PLUGIN=/usr/bin/session-manager-plugin
+                    export AWS_SESSION_MANAGER_PLUGIN=/usr/local/bin/session-manager-plugin
 
                     # Install dependencies
                     pip3 install --user boto3 botocore >/dev/null 2>&1 || true
