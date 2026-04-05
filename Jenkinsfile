@@ -112,35 +112,26 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh '''
-                    cd ansible
+cd ansible
 
-                    # FORCE correct PATH (IMPORTANT)
-                    export PATH=/usr/bin:/usr/local/bin:/bin:$PATH
+export PATH=/usr/bin:/usr/local/bin:/bin:$PATH
 
-                    # FORCE plugin path (CRITICAL FIX)
-                    export AWS_SESSION_MANAGER_PLUGIN=/usr/local/bin/session-manager-plugin
+pip3 install --user boto3 botocore >/dev/null 2>&1 || true
+ansible-galaxy collection install amazon.aws >/dev/null 2>&1 || true
 
-                    # Install dependencies
-                    pip3 install --user boto3 botocore >/dev/null 2>&1 || true
-                    ansible-galaxy collection install amazon.aws >/dev/null 2>&1 || true
+chmod 400 $KEY_FILE
+export ANSIBLE_HOST_KEY_CHECKING=False
 
-                    echo "Plugin location:"
-                    which session-manager-plugin || true
-                    ls -l /usr/bin/session-manager-plugin || true
+echo "===== Web Tier (SSH) ====="
+ansible-playbook -i inventory.ini web.yml --private-key $KEY_FILE
 
-                    chmod 400 $KEY_FILE
-                    export ANSIBLE_HOST_KEY_CHECKING=False
+echo "===== App Tier (SSM) ====="
+export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
 
-                    echo "===== Web Tier (SSH) ====="
-                    ansible-playbook -i inventory.ini web.yml --private-key $KEY_FILE
-
-                    echo "===== App Tier (SSM) ====="
-                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                    export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
-
-                    ansible-playbook -i inventory.ini app.yml
-                    '''
+ansible-playbook -i inventory.ini app.yml
+'''
                 }
             }
         }
