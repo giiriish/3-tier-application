@@ -114,22 +114,26 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
-                    sh """
-                    cd ${ANSIBLE_DIR}
+                    sh '''
+                    cd ansible
 
-                    chmod 400 \$KEY_FILE
+                    # Install required dependencies
+                    pip3 install boto3 botocore --user
+                    ansible-galaxy collection install amazon.aws
+
+                    chmod 400 $KEY_FILE
                     export ANSIBLE_HOST_KEY_CHECKING=False
 
                     echo "===== Web Tier (SSH) ====="
-                    ansible-playbook -i inventory.ini web.yml --private-key \$KEY_FILE
+                    ansible-playbook -i inventory.ini web.yml --private-key $KEY_FILE
 
                     echo "===== App Tier (SSM) ====="
-                    export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                    export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                    export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                    export AWS_DEFAULT_REGION=us-east-1
 
                     ansible-playbook -i inventory.ini app.yml
-                    """
+                    '''
                 }
             }
         }
