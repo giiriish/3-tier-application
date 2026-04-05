@@ -13,6 +13,9 @@ pipeline {
 
     stages {
 
+        // =========================
+        // Terraform Init
+        // =========================
         stage('Terraform Init') {
             steps {
                 withCredentials([
@@ -30,6 +33,9 @@ pipeline {
             }
         }
 
+        // =========================
+        // Terraform Plan
+        // =========================
         stage('Terraform Plan') {
             steps {
                 withCredentials([
@@ -47,6 +53,9 @@ pipeline {
             }
         }
 
+        // =========================
+        // Terraform Apply
+        // =========================
         stage('Terraform Apply') {
             steps {
                 withCredentials([
@@ -64,6 +73,9 @@ pipeline {
             }
         }
 
+        // =========================
+        // Fetch Outputs
+        // =========================
         stage('Fetch Details') {
             steps {
                 script {
@@ -86,6 +98,9 @@ pipeline {
             }
         }
 
+        // =========================
+        // Create Inventory
+        // =========================
         stage('Create Inventory') {
             steps {
                 script {
@@ -100,6 +115,9 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
             }
         }
 
+        // =========================
+        // Wait for EC2
+        // =========================
         stage('Wait for EC2') {
             steps {
                 echo "Waiting for EC2 instances..."
@@ -107,6 +125,9 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
             }
         }
 
+        // =========================
+        // Run Ansible
+        // =========================
         stage('Run Ansible') {
             steps {
                 withCredentials([
@@ -117,9 +138,18 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
                     sh '''
                     cd ansible
 
-                    # Install required dependencies
-                    pip3 install boto3 botocore --user
+                    # Install required Python dependencies
+                    pip3 install --user boto3 botocore
+
+                    # Install Ansible AWS collection
                     ansible-galaxy collection install amazon.aws
+
+                    # Check SSM plugin (DON'T install here)
+                    if ! command -v session-manager-plugin &> /dev/null
+                    then
+                        echo "ERROR: session-manager-plugin not installed on Jenkins server"
+                        exit 1
+                    fi
 
                     chmod 400 $KEY_FILE
                     export ANSIBLE_HOST_KEY_CHECKING=False
@@ -130,13 +160,13 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
                     echo "===== App Tier (SSM) ====="
                     export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
                     export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                    export AWS_DEFAULT_REGION=us-east-1
+                    export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
 
                     ansible-playbook -i inventory.ini app.yml
                     '''
                 }
             }
         }
+    }
 
-    } 
-} 
+}
