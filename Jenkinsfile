@@ -13,9 +13,6 @@ pipeline {
 
     stages {
 
-        // =========================
-        // Terraform Init
-        // =========================
         stage('Terraform Init') {
             steps {
                 withCredentials([
@@ -33,9 +30,6 @@ pipeline {
             }
         }
 
-        // =========================
-        // Terraform Plan
-        // =========================
         stage('Terraform Plan') {
             steps {
                 withCredentials([
@@ -53,9 +47,6 @@ pipeline {
             }
         }
 
-        // =========================
-        // Terraform Apply
-        // =========================
         stage('Terraform Apply') {
             steps {
                 withCredentials([
@@ -73,9 +64,6 @@ pipeline {
             }
         }
 
-        // =========================
-        // Fetch Outputs
-        // =========================
         stage('Fetch Details') {
             steps {
                 script {
@@ -95,9 +83,6 @@ pipeline {
             }
         }
 
-        // =========================
-        // Create Inventory
-        // =========================
         stage('Create Inventory') {
             steps {
                 script {
@@ -112,9 +97,6 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
             }
         }
 
-        // =========================
-        // Wait for EC2
-        // =========================
         stage('Wait for EC2') {
             steps {
                 echo "Waiting for EC2 instances..."
@@ -122,9 +104,6 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
             }
         }
 
-        // =========================
-        // Run Ansible
-        // =========================
         stage('Run Ansible') {
             steps {
                 withCredentials([
@@ -135,20 +114,13 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     sh '''
                     cd ansible
 
-                    # Fix PATH for Jenkins
-                    export PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sessionmanagerplugin/bin
+                    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
 
-                    # Install dependencies safely
                     pip3 install --user boto3 botocore >/dev/null 2>&1 || true
                     ansible-galaxy collection install amazon.aws >/dev/null 2>&1 || true
 
-                    # Check session-manager-plugin (with fallback)
-                    if ! command -v session-manager-plugin >/dev/null 2>&1; then
-                        if [ ! -f /usr/local/sessionmanagerplugin/bin/session-manager-plugin ]; then
-                            echo "❌ ERROR: session-manager-plugin not installed"
-                            exit 1
-                        fi
-                    fi
+                    echo "Using plugin at:"
+                    which session-manager-plugin || true
 
                     chmod 400 $KEY_FILE
                     export ANSIBLE_HOST_KEY_CHECKING=False
@@ -165,6 +137,15 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     '''
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Deployment Successful!"
+        }
+        failure {
+            echo "❌ Deployment Failed!"
         }
     }
 }
