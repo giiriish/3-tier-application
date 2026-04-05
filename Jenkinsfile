@@ -128,7 +128,7 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
                     export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
                     export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
 
-                    ansible-playbook -i inventory.ini mysql.yml
+                    ansible-playbook -i inventory.ini app.yml
                     """
                 }
             }
