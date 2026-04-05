@@ -114,7 +114,7 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                    sh '''
 cd ansible
 
-export PATH=/usr/bin:/usr/local/bin:/bin:$PATH
+export PATH=/usr/bin:/usr/local/bin:${env.PATH}
 
 chmod 400 $KEY_FILE
 export ANSIBLE_HOST_KEY_CHECKING=False
