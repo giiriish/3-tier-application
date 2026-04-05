@@ -13,9 +13,6 @@ pipeline {
 
     stages {
 
-        // =========================
-        // Terraform Init
-        // =========================
         stage('Terraform Init') {
             steps {
                 withCredentials([
@@ -33,9 +30,6 @@ pipeline {
             }
         }
 
-        // =========================
-        // Terraform Plan
-        // =========================
         stage('Terraform Plan') {
             steps {
                 withCredentials([
@@ -53,9 +47,6 @@ pipeline {
             }
         }
 
-        // =========================
-        // Terraform Apply
-        // =========================
         stage('Terraform Apply') {
             steps {
                 withCredentials([
@@ -73,51 +64,39 @@ pipeline {
             }
         }
 
-        // =========================
-        // Fetch Outputs
-        // =========================
         stage('Fetch Details') {
             steps {
                 script {
-                    def web_ip = sh(
+                    env.WEB_IP = sh(
                         script: "cd ${TF_DIR} && terraform output -raw web_public_ip",
                         returnStdout: true
                     ).trim()
 
-                    def app_id = sh(
+                    env.APP_ID = sh(
                         script: "cd ${TF_DIR} && terraform output -raw app_instance_id",
                         returnStdout: true
                     ).trim()
 
-                    env.WEB_IP = web_ip
-                    env.APP_ID = app_id
-
-                    echo "Web IP: ${WEB_IP}"
-                    echo "App Instance ID: ${APP_ID}"
+                    echo "Web IP: ${env.WEB_IP}"
+                    echo "App Instance ID: ${env.APP_ID}"
                 }
             }
         }
 
-        // =========================
-        // Create Inventory
-        // =========================
         stage('Create Inventory') {
             steps {
                 script {
                     writeFile file: "${ANSIBLE_DIR}/inventory.ini", text: """
 [web]
-${WEB_IP} ansible_user=ec2-user
+${env.WEB_IP} ansible_user=ec2-user
 
 [app]
-${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION} ansible_aws_ssm_bucket_name=last-one-1 ansible_python_interpreter=/usr/bin/python3
+${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${env.AWS_DEFAULT_REGION} ansible_aws_ssm_bucket_name=last-one-1 ansible_python_interpreter=/usr/bin/python3
 """
                 }
             }
         }
 
-        // =========================
-        // Wait for EC2
-        // =========================
         stage('Wait for EC2') {
             steps {
                 echo "Waiting for EC2 instances..."
@@ -125,9 +104,6 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
             }
         }
 
-        // =========================
-        // Run Ansible
-        // =========================
         stage('Run Ansible') {
             steps {
                 withCredentials([
@@ -138,16 +114,11 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
                     sh '''
                     cd ansible
 
-                    # Install required Python dependencies
-                    pip3 install --user boto3 botocore
+                    pip3 install --user boto3 botocore >/dev/null 2>&1 || true
+                    ansible-galaxy collection install amazon.aws >/dev/null 2>&1 || true
 
-                    # Install Ansible AWS collection
-                    ansible-galaxy collection install amazon.aws
-
-                    # Check SSM plugin (DON'T install here)
-                    if ! command -v session-manager-plugin &> /dev/null
-                    then
-                        echo "ERROR: session-manager-plugin not installed on Jenkins server"
+                    if ! command -v session-manager-plugin >/dev/null 2>&1; then
+                        echo "ERROR: session-manager-plugin not installed"
                         exit 1
                     fi
 
@@ -168,5 +139,4 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
             }
         }
     }
-
 }
