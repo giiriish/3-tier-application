@@ -13,9 +13,6 @@ pipeline {
 
     stages {
 
-        // ================================
-        // Terraform Init
-        // ================================
         stage('Terraform Init') {
             steps {
                 withCredentials([
@@ -33,9 +30,6 @@ pipeline {
             }
         }
 
-        // ================================
-        // Terraform Plan
-        // ================================
         stage('Terraform Plan') {
             steps {
                 withCredentials([
@@ -53,9 +47,6 @@ pipeline {
             }
         }
 
-        // ================================
-        // Terraform Apply
-        // ================================
         stage('Terraform Apply') {
             steps {
                 withCredentials([
@@ -73,9 +64,6 @@ pipeline {
             }
         }
 
-        // ================================
-        // Fetch Outputs (IP + Instance ID)
-        // ================================
         stage('Fetch Details') {
             steps {
                 script {
@@ -98,9 +86,6 @@ pipeline {
             }
         }
 
-        // ================================
-        // Create Ansible Inventory
-        // ================================
         stage('Create Inventory') {
             steps {
                 script {
@@ -115,9 +100,6 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
             }
         }
 
-        // ================================
-        // Wait for EC2 Ready
-        // ================================
         stage('Wait for EC2') {
             steps {
                 echo "Waiting for EC2 instances..."
@@ -125,9 +107,6 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
             }
         }
 
-        // ================================
-        // Run Ansible (Web via SSH, App via SSM)
-        // ================================
         stage('Run Ansible') {
             steps {
                 withCredentials([
@@ -155,4 +134,5 @@ ${APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aw
             }
         }
 
-}
+    } 
+} 
