@@ -111,13 +111,10 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
-                    sh '''
+                   sh '''
 cd ansible
 
-export PATH=/usr/bin:/usr/local/bin:/bin:$PATH
-
-pip3 install --user boto3 botocore >/dev/null 2>&1 || true
-ansible-galaxy collection install amazon.aws >/dev/null 2>&1 || true
+export PATH=$HOME/.local/bin:/usr/bin:/usr/local/bin:/bin:$PATH
 
 chmod 400 $KEY_FILE
 export ANSIBLE_HOST_KEY_CHECKING=False
