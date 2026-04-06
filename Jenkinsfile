@@ -114,21 +114,25 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
         }
 
         stage('Run Ansible (SSM)') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'aws-creds',
-                    usernameVariable: 'AWS_ACCESS_KEY_ID',
-                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                )]) {
-                    bat """
-                    wsl bash -c "export AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID% && \
-                    export AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY% && \
-                    export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} && \
-                    /home/vedant/ansible-venv/bin/ansible-playbook -vvv \
-                    -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/inventory.ini \
-                    /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/web.yml \
-                    /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/app.yml"
-                    """
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'aws-creds',
+            usernameVariable: 'AWS_ACCESS_KEY_ID',
+            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+        )]) {
+            sh '''
+            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            export AWS_DEFAULT_REGION=us-east-1
+
+            cd ansible
+
+            ansible-playbook -vvv -i inventory.ini web.yml
+            ansible-playbook -vvv -i inventory.ini app.yml
+            '''
+        }
+    }
+}
                 }
             }
         }
