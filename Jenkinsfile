@@ -29,18 +29,16 @@ pipeline {
         stage('Terraform Deploy') {
             steps {
                 withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-creds'
-                ]]) {
-                    dir("${TF_DIR}") {
-                        sh '''
-                        export AWS_DEFAULT_REGION=us-east-1
+                     string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+]) {
+    sh '''
+    export AWS_DEFAULT_REGION=us-east-1
 
-                        terraform init -reconfigure
-                        terraform validate
-                        terraform apply -auto-approve -var-file=terraform.tfvars
-                        '''
-                    }
+    terraform init
+    terraform apply -auto-approve
+    '''
+}
                 }
             }
         }
