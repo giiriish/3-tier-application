@@ -116,19 +116,18 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     )
                 ]) {
                     sh """
-                    wsl bash -c "export AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID% && \
-                    export AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY% && \
-                    export AWS_DEFAULT_REGION=us-east-1 && \
-                    /home/girish/ansible-venv/bin/ansible-playbook -vvv \
-                    -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/%JOB_NAME%/ansible/inventory.ini \
-                    /mnt/c/ProgramData/Jenkins/.jenkins/workspace/%JOB_NAME%/ansible/web.yml"
+export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+export AWS_DEFAULT_REGION=us-east-1
 
-                    wsl bash -c "export AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID% && \
-                    export AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY% && \
-                    export AWS_DEFAULT_REGION=us-east-1 && \
-                    /home/girish/ansible-venv/bin/ansible-playbook -vvv \
-                    -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/%JOB_NAME%/ansible/inventory.ini \
-                    /mnt/c/ProgramData/Jenkins/.jenkins/workspace/%JOB_NAME%/ansible/app.yml"
+/home/girish/ansible-venv/bin/ansible-playbook -vvv \
+-i ${WORKSPACE}/ansible/inventory.ini \
+${WORKSPACE}/ansible/web.yml
+
+/home/girish/ansible-venv/bin/ansible-playbook -vvv \
+-i ${WORKSPACE}/ansible/inventory.ini \
+${WORKSPACE}/ansible/app.yml
+
                     """
                 }
             }
