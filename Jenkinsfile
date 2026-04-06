@@ -5,7 +5,6 @@ pipeline {
         TF_DIR      = 'terraform'
         ANSIBLE_DIR = 'ansible'
         AWS_DEFAULT_REGION = 'us-east-1'
-        TF_PLUGIN_CACHE_DIR = 'C:\\terraform-cache'
     }
 
     options {
@@ -37,15 +36,14 @@ pipeline {
                     )
                 ]) {
                     dir("${TF_DIR}") {
-                        bat """
-                        set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
-                        set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
-                        set TF_PLUGIN_CACHE_DIR=%TF_PLUGIN_CACHE_DIR%
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 
                         terraform init -reconfigure
                         terraform validate
                         terraform apply -auto-approve -var-file="terraform.tfvars"
-                        """
+                        '''
                     }
                 }
             }
@@ -62,26 +60,23 @@ pipeline {
                 ]) {
                     dir("${TF_DIR}") {
                         script {
-                            def webId = bat(
-                                script: """
-                                set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
-                                set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
+                            env.WEB_ID = sh(
+                                script: '''
+                                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                                 terraform output -raw web_instance_id
-                                """,
+                                ''',
                                 returnStdout: true
                             ).trim()
 
-                            def appId = bat(
-                                script: """
-                                set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
-                                set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
+                            env.APP_ID = sh(
+                                script: '''
+                                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                                 terraform output -raw app_instance_id
-                                """,
+                                ''',
                                 returnStdout: true
                             ).trim()
-
-                            env.WEB_ID = webId.split("\\r?\\n")[-1]
-                            env.APP_ID = appId.split("\\r?\\n")[-1]
 
                             echo "WEB_ID=${env.WEB_ID}"
                             echo "APP_ID=${env.APP_ID}"
@@ -115,21 +110,17 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )
                 ]) {
-                    bat """
-                    wsl bash -c "export AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID% && \
-                    export AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY% && \
-                    export AWS_DEFAULT_REGION=us-east-1 && \
-                    /home/girish/ansible-venv/bin/ansible-playbook -vvv \
-                    -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/%JOB_NAME%/ansible/inventory.ini \
-                    /mnt/c/ProgramData/Jenkins/.jenkins/workspace/%JOB_NAME%/ansible/web.yml"
+                    sh '''
+                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                    export AWS_DEFAULT_REGION=us-east-1
 
-                    wsl bash -c "export AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID% && \
-                    export AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY% && \
-                    export AWS_DEFAULT_REGION=us-east-1 && \
                     /home/girish/ansible-venv/bin/ansible-playbook -vvv \
-                    -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/%JOB_NAME%/ansible/inventory.ini \
-                    /mnt/c/ProgramData/Jenkins/.jenkins/workspace/%JOB_NAME%/ansible/app.yml"
-                    """
+                    -i ansible/inventory.ini ansible/web.yml
+
+                    /home/girish/ansible-venv/bin/ansible-playbook -vvv \
+                    -i ansible/inventory.ini ansible/app.yml
+                    '''
                 }
             }
         }
@@ -147,9 +138,6 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
         }
         failure {
             echo '❌ Deployment Failed'
-        }
-        always {
-            cleanWs()
         }
     }
 }
