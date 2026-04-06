@@ -5,58 +5,65 @@ pipeline {
         TF_DIR = 'terraform'
         ANSIBLE_DIR = 'ansible'
         AWS_DEFAULT_REGION = 'us-east-1'
-        TF_PLUGIN_CACHE_DIR = 'C:\\terraform-cache'
     }
 
     stages {
 
-        
-        // Terraform Init
-        
         stage('Terraform Init') {
             steps {
                 withCredentials([
-    usernamePassword(
-        credentialsId: 'aws-creds',
-        usernameVariable: 'AWS_ACCESS_KEY_ID',
-        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-    )
-]) {
+                    usernamePassword(
+                        credentialsId: 'aws-creds',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
                 ]) {
                     dir("${TF_DIR}") {
-                        sh 'terraform init'
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform init -reconfigure
+                        '''
                     }
                 }
             }
         }
 
-       
-        // Terraform Plan
-        
         stage('Terraform Plan') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    usernamePassword(
+                        credentialsId: 'aws-creds',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
                 ]) {
                     dir("${TF_DIR}") {
-                        sh 'terraform plan'
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform plan
+                        '''
                     }
                 }
             }
         }
 
-       
-        // Terraform Apply
-        
         stage('Terraform Apply') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    usernamePassword(
+                        credentialsId: 'aws-creds',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
                 ]) {
                     dir("${TF_DIR}") {
-                        sh 'terraform apply -auto-approve'
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform apply -auto-approve -lock=true
+                        '''
                     }
                 }
             }
