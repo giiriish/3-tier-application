@@ -119,19 +119,13 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                 )]) {
 
                     sh '''
-C:\\Windows\\System32\\wsl.exe bash -c "
-cd /mnt/c/ProgramData/Jenkins/.jenkins/workspace/$JOB_NAME &&
+export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+export AWS_DEFAULT_REGION=us-east-1
 
-export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID &&
-export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY &&
-export AWS_DEFAULT_REGION=us-east-1 &&
+ansible-playbook -vvv -i ansible/inventory.ini ansible/web.yml
 
-/home/girish/ansible-venv/bin/ansible-playbook -vvv \
--i ansible/inventory.ini ansible/web.yml &&
-
-/home/girish/ansible-venv/bin/ansible-playbook -vvv \
--i ansible/inventory.ini ansible/app.yml
-"
+ansible-playbook -vvv -i ansible/inventory.ini ansible/app.yml
 '''
                 }
             }
