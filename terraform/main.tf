@@ -36,12 +36,3 @@ resource "aws_instance" "app" {
   }
 }
 
-terraform {
-  backend "s3" {
-    bucket         = "guru-3-tier"
-    key            = "terraform/terraform.tfstate"
-    region         = "ap-south-1"
-    dynamodb_table = "terraform-lock"
-    encrypt        = true
-  }
-}
