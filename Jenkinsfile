@@ -1,166 +1,158 @@
+
 pipeline {
-agent any
+    agent any
 
-```
-environment {
-    TF_DIR      = 'terraform'
-    ANSIBLE_DIR = 'ansible'
-    AWS_DEFAULT_REGION = 'us-east-1'
-}
-
-options {
-    disableConcurrentBuilds()
-    timestamps()
-}
-
-stages {
-
-    stage('Clean Workspace') {
-        steps {
-            cleanWs()
-        }
+    environment {
+        TF_DIR      = 'terraform'
+        ANSIBLE_DIR = 'ansible'
+        AWS_DEFAULT_REGION = 'us-east-1'
     }
 
-    stage('Checkout Code') {
-        steps {
-            checkout scm
-        }
+    options {
+        disableConcurrentBuilds()
+        timestamps()
     }
 
-    stage('Terraform Deploy') {
-        steps {
-            withCredentials([usernamePassword(
-                credentialsId: 'aws-creds',
-                usernameVariable: 'AWS_ACCESS_KEY_ID',
-                passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-            )]) {
-                dir("${TF_DIR}") {
-                    sh '''
-                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+    stages {
 
-                    terraform init -reconfigure
-                    terraform validate
-                    terraform apply -auto-approve -var-file="terraform.tfvars"
-                    '''
-                }
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
             }
         }
-    }
 
-    stage('Fetch Instance IDs') {
-        steps {
-            withCredentials([usernamePassword(
-                credentialsId: 'aws-creds',
-                usernameVariable: 'AWS_ACCESS_KEY_ID',
-                passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-            )]) {
-                dir("${TF_DIR}") {
-                    script {
-                        env.WEB_ID = sh(
-                            script: '''
-                            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                            terraform output -raw web_instance_id
-                            ''',
-                            returnStdout: true
-                        ).trim()
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
 
-                        env.APP_ID = sh(
-                            script: '''
-                            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                            terraform output -raw app_instance_id
-                            ''',
-                            returnStdout: true
-                        ).trim()
+        stage('Terraform Deploy') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
+                    dir("${TF_DIR}") {
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 
-                        echo "WEB_ID=${env.WEB_ID}"
-                        echo "APP_ID=${env.APP_ID}"
+                        terraform init -reconfigure
+                        terraform validate
+                        terraform apply -auto-approve -var-file="terraform.tfvars"
+                        '''
                     }
                 }
             }
         }
-    }
 
-    stage('Create Inventory (SSM)') {
-        steps {
-            script {
-                writeFile file: "${ANSIBLE_DIR}/inventory.ini", text: """
-```
+        stage('Fetch Instance IDs') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
+                    dir("${TF_DIR}") {
+                        script {
+                            env.WEB_ID = sh(
+                                script: '''
+                                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                                terraform output -raw web_instance_id
+                                ''',
+                                returnStdout: true
+                            ).trim()
 
+                            env.APP_ID = sh(
+                                script: '''
+                                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                                terraform output -raw app_instance_id
+                                ''',
+                                returnStdout: true
+                            ).trim()
+
+                            echo "WEB_ID=${env.WEB_ID}"
+                            echo "APP_ID=${env.APP_ID}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Create Inventory (SSM)') {
+            steps {
+                script {
+                    writeFile file: "${ANSIBLE_DIR}/inventory.ini", text: """
 [web]
 ${env.WEB_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION}
 
 [app]
 ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION}
 """
-}
-}
-}
-
-```
-    stage('Debug Inventory') {
-        steps {
-            sh "cat ${ANSIBLE_DIR}/inventory.ini"
+                }
+            }
         }
-    }
 
-    stage('Wait for EC2 (SSM Ready)') {
-        steps {
-            echo "Waiting for EC2 instances to register with SSM..."
-            sleep 90
+        stage('Debug Inventory') {
+            steps {
+                sh "cat ${ANSIBLE_DIR}/inventory.ini"
+            }
         }
-    }
 
-    stage('Run Ansible (SSM)') {
-        steps {
-            withCredentials([usernamePassword(
-                credentialsId: 'aws-creds',
-                usernameVariable: 'AWS_ACCESS_KEY_ID',
-                passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-            )]) {
+        stage('Wait for EC2 (SSM Ready)') {
+            steps {
+                echo "Waiting for EC2 instances..."
+                sleep 90
+            }
+        }
 
-                sh '''
-```
+        stage('Run Ansible (SSM)') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
 
-C:\Windows\System32\wsl.exe bash -c "
+                    sh '''
+C:\\Windows\\System32\\wsl.exe bash -c "
 cd /mnt/c/ProgramData/Jenkins/.jenkins/workspace/$JOB_NAME &&
 
 export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID &&
 export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY &&
 export AWS_DEFAULT_REGION=us-east-1 &&
 
-/home/girish/ansible-venv/bin/ansible-playbook -vvv 
+/home/girish/ansible-venv/bin/ansible-playbook -vvv \
 -i ansible/inventory.ini ansible/web.yml &&
 
-/home/girish/ansible-venv/bin/ansible-playbook -vvv 
+/home/girish/ansible-venv/bin/ansible-playbook -vvv \
 -i ansible/inventory.ini ansible/app.yml
 "
 '''
-}
-}
-}
+                }
+            }
+        }
 
-```
-    stage('Health Check') {
-        steps {
-            echo "✅ Deployment Completed Successfully"
+        stage('Health Check') {
+            steps {
+                echo "✅ Deployment Completed Successfully"
+            }
         }
     }
-}
 
-post {
-    success {
-        echo '✅ Deployment Successful'
+    post {
+        success {
+            echo '✅ Deployment Successful'
+        }
+        failure {
+            echo '❌ Deployment Failed'
+        }
+        always {
+            cleanWs()
+        }
     }
-    failure {
-        echo '❌ Deployment Failed'
-    }
-    always {
-        cleanWs()
-    }
-}
-```
-
 }
