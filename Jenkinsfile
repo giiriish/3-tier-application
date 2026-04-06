@@ -29,13 +29,11 @@ pipeline {
 
         stage('Terraform Deploy') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-creds',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
                     dir("${TF_DIR}") {
                         bat """
                         set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
@@ -53,13 +51,11 @@ pipeline {
 
         stage('Fetch Instance IDs') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-creds',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
                     dir("${TF_DIR}") {
                         script {
                             def webId = bat(
@@ -92,57 +88,54 @@ pipeline {
         }
 
         stage('Create Inventory (SSM)') {
-    steps {
-        script {
-            writeFile file: "${ANSIBLE_DIR}/inventory.ini", text: """
-
+            steps {
+                script {
+                    writeFile file: "${ANSIBLE_DIR}/inventory.ini", text: """
 [web]
-${env.WEB_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=us-east-1 ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=guru-3-tier
+${env.WEB_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION} ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=guru-3-tier
 
 [app]
-${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=us-east-1 ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=guru-3-tier
+${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION} ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=guru-3-tier
 """
+                }
+            }
         }
-    }
-}
 
-stage('Debug Inventory') {
-    steps {
-        bat '''
-        type ansible\\inventory.ini
-        '''
-    }
-}
-
-stage('Wait for EC2 Boot') {
-    steps {
-        sleep(time: 60, unit: 'SECONDS')
-    }
-}
-
-       stage('Run Ansible') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'aws-creds',
-            usernameVariable: 'AWS_ACCESS_KEY_ID',
-            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-        )]) {
-            bat """
-            wsl bash -c "export AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID% && \
-            export AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY% && \
-            export AWS_DEFAULT_REGION=us-east-1 && \
-            /home/vedant/ansible-venv/bin/ansible-playbook -vvv \
-            -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/inventory.ini \
-            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/web.yml \
-            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/app.yml"
-            """
+        stage('Debug Inventory') {
+            steps {
+                bat "type ${ANSIBLE_DIR}\\inventory.ini"
+            }
         }
-    }
-}
+
+        stage('Wait for EC2 Boot') {
+            steps {
+                sleep(time: 60, unit: 'SECONDS')
+            }
+        }
+
+        stage('Run Ansible (SSM)') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
+                    bat """
+                    wsl bash -c "export AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID% && \
+                    export AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY% && \
+                    export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} && \
+                    /home/vedant/ansible-venv/bin/ansible-playbook -vvv \
+                    -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/inventory.ini \
+                    /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/web.yml \
+                    /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/app.yml"
+                    """
+                }
+            }
+        }
 
         stage('Health Check') {
             steps {
-                echo "Deployment Completed Successfully"
+                echo "✅ Deployment Completed Successfully"
             }
         }
     }
