@@ -5,7 +5,6 @@ pipeline {
         TF_DIR      = 'terraform'
         ANSIBLE_DIR = 'ansible'
         AWS_DEFAULT_REGION = 'us-east-1'
-        TF_PLUGIN_CACHE_DIR = 'C:\\terraform-cache'
     }
 
     options {
@@ -35,15 +34,14 @@ pipeline {
                     passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                 )]) {
                     dir("${TF_DIR}") {
-                        bat """
-                        set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
-                        set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
-                        set TF_PLUGIN_CACHE_DIR=%TF_PLUGIN_CACHE_DIR%
+                        sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 
                         terraform init -reconfigure
                         terraform validate
                         terraform apply -auto-approve -var-file="terraform.tfvars"
-                        """
+                        '''
                     }
                 }
             }
@@ -58,26 +56,23 @@ pipeline {
                 )]) {
                     dir("${TF_DIR}") {
                         script {
-                            def webId = bat(
-                                script: """
-                                set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
-                                set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
+                            env.WEB_ID = sh(
+                                script: '''
+                                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                                 terraform output -raw web_instance_id
-                                """,
+                                ''',
                                 returnStdout: true
                             ).trim()
 
-                            def appId = bat(
-                                script: """
-                                set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
-                                set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
+                            env.APP_ID = sh(
+                                script: '''
+                                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                                 terraform output -raw app_instance_id
-                                """,
+                                ''',
                                 returnStdout: true
                             ).trim()
-
-                            env.WEB_ID = webId.split("\\r?\\n")[-1]
-                            env.APP_ID = appId.split("\\r?\\n")[-1]
 
                             echo "WEB_ID=${env.WEB_ID}"
                             echo "APP_ID=${env.APP_ID}"
@@ -92,10 +87,10 @@ pipeline {
                 script {
                     writeFile file: "${ANSIBLE_DIR}/inventory.ini", text: """
 [web]
-${env.WEB_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION} ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=guru-3-tier
+${env.WEB_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION}
 
 [app]
-${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION} ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=guru-3-tier
+${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=${AWS_DEFAULT_REGION}
 """
                 }
             }
@@ -103,36 +98,34 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
 
         stage('Debug Inventory') {
             steps {
-                bat "type ${ANSIBLE_DIR}\\inventory.ini"
+                sh "cat ${ANSIBLE_DIR}/inventory.ini"
             }
         }
 
-        stage('Wait for EC2 Boot') {
+        stage('Wait for EC2') {
             steps {
-                sleep(time: 60, unit: 'SECONDS')
+                echo "Waiting for EC2 instances..."
+                sleep 60
             }
         }
 
         stage('Run Ansible (SSM)') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'aws-creds',
-            usernameVariable: 'AWS_ACCESS_KEY_ID',
-            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-        )]) {
-            sh '''
-            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-            export AWS_DEFAULT_REGION=us-east-1
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
+                    sh '''
+                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                    export AWS_DEFAULT_REGION=us-east-1
 
-            cd ansible
+                    cd ansible
 
-            ansible-playbook -vvv -i inventory.ini web.yml
-            ansible-playbook -vvv -i inventory.ini app.yml
-            '''
-        }
-    }
-}
+                    ansible-playbook -i inventory.ini web.yml
+                    ansible-playbook -i inventory.ini app.yml
+                    '''
                 }
             }
         }
