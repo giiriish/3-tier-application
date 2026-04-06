@@ -28,17 +28,19 @@ pipeline {
 
         stage('Terraform Deploy') {
             steps {
-                withCredentials([[
-                     string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
-    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
-]) {
-    sh '''
-    export AWS_DEFAULT_REGION=us-east-1
+                withCredentials([
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir("${TF_DIR}") {
+                        sh '''
+                        export AWS_DEFAULT_REGION=us-east-1
 
-    terraform init
-    terraform apply -auto-approve
-    '''
-}
+                        terraform init -reconfigure
+                        terraform validate
+                        terraform apply -auto-approve -var-file=terraform.tfvars
+                        '''
+                    }
                 }
             }
         }
@@ -86,10 +88,10 @@ ansible_user=ec2-user
 
         stage('Run Ansible') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-creds'
-                ]]) {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
                     sh '''
                     export AWS_DEFAULT_REGION=us-east-1
 
