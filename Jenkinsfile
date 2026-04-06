@@ -37,7 +37,7 @@ pipeline {
                     )
                 ]) {
                     dir("${TF_DIR}") {
-                        bat """
+                        sh """
                         set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
                         set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
                         set TF_PLUGIN_CACHE_DIR=%TF_PLUGIN_CACHE_DIR%
