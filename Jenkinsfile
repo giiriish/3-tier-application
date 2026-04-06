@@ -105,7 +105,7 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
         stage('Wait for EC2') {
             steps {
                 echo "Waiting for EC2 instances..."
-                sleep 60
+                sleep 90
             }
         }
 
@@ -116,21 +116,22 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     usernameVariable: 'AWS_ACCESS_KEY_ID',
                     passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                 )]) {
-                   sh """
+                    sh """
 wsl bash -c '
+cd /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME} &&
+
 export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} &&
 export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} &&
 export AWS_DEFAULT_REGION=us-east-1 &&
 
 /home/girish/ansible-venv/bin/ansible-playbook -vvv \
--i /mnt/c/Users/girish/Downloads/3-tier-application-main/3-tier-application-main/ansible/inventory \
-/mnt/c/Users/girish/Downloads/3-tier-application-main/3-tier-application-main/ansible/web.yml &&
+-i ansible/inventory.ini ansible/web.yml &&
 
 /home/girish/ansible-venv/bin/ansible-playbook -vvv \
--i /mnt/c/Users/girish/Downloads/3-tier-application-main/3-tier-application-main/ansible/inventory \
-/mnt/c/Users/girish/Downloads/3-tier-application-main/3-tier-application-main/ansible/app.yml
+-i ansible/inventory.ini ansible/app.yml
 '
 """
+                }
             }
         }
 
