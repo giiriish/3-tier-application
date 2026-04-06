@@ -4,7 +4,7 @@ pipeline {
     environment {
         TF_DIR      = 'terraform'
         ANSIBLE_DIR = 'ansible'
-        AWS_DEFAULT_REGION = 'us-east-1'
+        AWS_DEFAULT_REGION = 'us-south-1'
         TF_PLUGIN_CACHE_DIR = 'C:\\terraform-cache'
     }
 
@@ -62,7 +62,7 @@ pipeline {
                 ]) {
                     dir("${TF_DIR}") {
                         script {
-                            def webId = bat(
+                            def webId = sh(
                                 script: """
                                 set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
                                 set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
@@ -71,7 +71,7 @@ pipeline {
                                 returnStdout: true
                             ).trim()
 
-                            def appId = bat(
+                            def appId = sh(
                                 script: """
                                 set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID%
                                 set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY%
