@@ -31,7 +31,7 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(
-                        credentialsId: 'aws-creds',
+                        credentialsId: 'ec2-key',
                         usernameVariable: 'AWS_ACCESS_KEY_ID',
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )
@@ -97,10 +97,10 @@ pipeline {
             writeFile file: "${ANSIBLE_DIR}/inventory.ini", text: """
 
 [web]
-${env.WEB_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=us-east-1 ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=last-one-1
+${env.WEB_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=us-east-1 ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=guru-3-tier
 
 [app]
-${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=us-east-1 ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=last-one-1
+${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansible_aws_ssm_region=us-east-1 ansible_remote_tmp=/tmp ansible_shell_type=sh ansible_aws_ssm_bucket_name=guru-3-tier
 """
         }
     }
@@ -116,7 +116,7 @@ stage('Debug Inventory') {
 
 stage('Wait for EC2 Boot') {
     steps {
-        sleep(time: 120, unit: 'SECONDS')
+        sleep(time: 60, unit: 'SECONDS')
     }
 }
 
@@ -124,7 +124,7 @@ stage('Wait for EC2 Boot') {
     steps {
         withCredentials([
             usernamePassword(
-                credentialsId: 'aws-creds',
+                credentialsId: 'ec2-key',
                 usernameVariable: 'AWS_ACCESS_KEY_ID',
                 passwordVariable: 'AWS_SECRET_ACCESS_KEY'
             )
@@ -135,7 +135,8 @@ stage('Wait for EC2 Boot') {
             export AWS_DEFAULT_REGION=us-east-1 && \
             /home/vedant/ansible-venv/bin/ansible-playbook -vvv \
             -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/demo-1/ansible/inventory.ini \
-            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/demo-1/ansible/playbook.yml"
+            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/demo-1/ansible/web.yml \
+            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/demo-1/ansible/app.yml"
             """
         }
     }
