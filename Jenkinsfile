@@ -2,48 +2,61 @@ pipeline {
     agent any
 
     environment {
-        TF_DIR      = 'terraform'
+        TF_DIR = 'terraform'
         ANSIBLE_DIR = 'ansible'
         AWS_DEFAULT_REGION = 'us-east-1'
-    }
-
-    options {
-        disableConcurrentBuilds()
-        timestamps()
+        TF_PLUGIN_CACHE_DIR = 'C:\\terraform-cache'
     }
 
     stages {
 
-        stage('Clean Workspace') {
-            steps {
-                cleanWs()
-            }
-        }
-
-        stage('Checkout Code') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Terraform Deploy') {
+        
+        // Terraform Init
+        
+        stage('Terraform Init') {
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-creds',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
+    usernamePassword(
+        credentialsId: 'aws-creds',
+        usernameVariable: 'AWS_ACCESS_KEY_ID',
+        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+    )
+]) {
                 ]) {
                     dir("${TF_DIR}") {
-                        sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        sh 'terraform init'
+                    }
+                }
+            }
+        }
 
-                        terraform init -reconfigure
-                        terraform validate
-                        terraform apply -auto-approve -var-file="terraform.tfvars"
-                        '''
+       
+        // Terraform Plan
+        
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir("${TF_DIR}") {
+                        sh 'terraform plan'
+                    }
+                }
+            }
+        }
+
+       
+        // Terraform Apply
+        
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir("${TF_DIR}") {
+                        sh 'terraform apply -auto-approve'
                     }
                 }
             }
