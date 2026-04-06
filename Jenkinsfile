@@ -116,17 +116,21 @@ ${env.APP_ID} ansible_connection=amazon.aws.aws_ssm ansible_user=ec2-user ansibl
                     usernameVariable: 'AWS_ACCESS_KEY_ID',
                     passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                 )]) {
-                    sh '''
-                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                    export AWS_DEFAULT_REGION=us-east-1
+                   sh """
+wsl bash -c '
+export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} &&
+export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} &&
+export AWS_DEFAULT_REGION=us-east-1 &&
 
-                    cd ansible
+/home/girish/ansible-venv/bin/ansible-playbook -vvv \
+-i /mnt/c/Users/girish/Downloads/3-tier-application-main/3-tier-application-main/ansible/inventory \
+/mnt/c/Users/girish/Downloads/3-tier-application-main/3-tier-application-main/ansible/web.yml &&
 
-                    ansible-playbook -i inventory.ini web.yml
-                    ansible-playbook -i inventory.ini app.yml
-                    '''
-                }
+/home/girish/ansible-venv/bin/ansible-playbook -vvv \
+-i /mnt/c/Users/girish/Downloads/3-tier-application-main/3-tier-application-main/ansible/inventory \
+/mnt/c/Users/girish/Downloads/3-tier-application-main/3-tier-application-main/ansible/app.yml
+'
+"""
             }
         }
 
