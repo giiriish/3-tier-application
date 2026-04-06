@@ -31,7 +31,7 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(
-                        credentialsId: 'ec2-key',
+                        credentialsId: 'aws-creds',
                         usernameVariable: 'AWS_ACCESS_KEY_ID',
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )
@@ -120,23 +120,21 @@ stage('Wait for EC2 Boot') {
     }
 }
 
-        stage('Run Ansible') {
+       stage('Run Ansible') {
     steps {
-        withCredentials([
-           withCredentials([usernamePassword(
-               credentialsId: 'aws-creds',
-               usernameVariable: 'AWS_ACCESS_KEY_ID',
-               passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-            )
-        ]) {
+        withCredentials([usernamePassword(
+            credentialsId: 'aws-creds',
+            usernameVariable: 'AWS_ACCESS_KEY_ID',
+            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+        )]) {
             bat """
             wsl bash -c "export AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID% && \
             export AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY% && \
             export AWS_DEFAULT_REGION=us-east-1 && \
             /home/vedant/ansible-venv/bin/ansible-playbook -vvv \
-            -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/demo-1/ansible/inventory.ini \
-            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/demo-1/ansible/web.yml \
-            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/demo-1/ansible/app.yml"
+            -i /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/inventory.ini \
+            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/web.yml \
+            /mnt/c/ProgramData/Jenkins/.jenkins/workspace/${JOB_NAME}/ansible/app.yml"
             """
         }
     }
