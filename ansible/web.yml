@@ -3,7 +3,6 @@
   become: yes
 
   tasks:
-
     - name: Install Nginx
       dnf:
         name: nginx
@@ -14,4 +13,3 @@
         name: nginx
         state: started
         enabled: true
-
