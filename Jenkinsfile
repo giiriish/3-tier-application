@@ -5,7 +5,7 @@ pipeline {
         TF_DIR      = 'terraform'
         ANSIBLE_DIR = 'ansible'
         AWS_DEFAULT_REGION = 'ap-south-1'
-        TF_PLUGIN_CACHE_DIR = '/var/lib/jenkins/.terraform.d/plugin-cache'  // 🔥 FIXED
+        TF_PLUGIN_CACHE_DIR = '/var/lib/jenkins/.terraform.d/plugin-cache'
     }
 
     options {
