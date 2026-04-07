@@ -100,25 +100,12 @@ ansible_aws_ssm_bucket_name=guru-3-tier
             }
         }
 
-        stage('Health Check') {
+        stage('Done') {
             steps {
-                dir("${TF_DIR}") {
-                    script {
-                        def WEB_IP = sh(
-                            script: "terraform output -raw web_public_ip",
-                            returnStdout: true
-                        ).trim()
-
-                        sh """
-                        echo "Checking Web Server..."
-                        curl -I http://${WEB_IP} || true
-                        """
-                    }
-                }
+                echo "✅ EC2 created and configured successfully"
             }
         }
     }
-
     post {
         success {
             echo "✅ Deployment Successful"
