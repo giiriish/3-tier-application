@@ -45,16 +45,20 @@ pipeline {
         stage('Fetch Instance IDs') {
             steps {
                 dir("${TF_DIR}") {
-                    script {
-                        env.WEB_ID = sh(
-                            script: "terraform output -raw web_instance_id",
-                            returnStdout: true
-                        ).trim()
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+                    ]) {
+                        script {
+                            env.WEB_ID = sh(
+                                script: "terraform output -raw web_instance_id",
+                                returnStdout: true
+                            ).trim()
 
-                        env.APP_ID = sh(
-                            script: "terraform output -raw app_instance_id",
-                            returnStdout: true
-                        ).trim()
+                            env.APP_ID = sh(
+                                script: "terraform output -raw app_instance_id",
+                                returnStdout: true
+                            ).trim()
+                        }
                     }
                 }
             }
@@ -97,10 +101,19 @@ ansible_aws_ssm_bucket_name=guru-3-tier
 
         stage('Health Check') {
             steps {
-                sh '''
-                echo "Checking web server..."
-                curl -I http://localhost || true
-                '''
+                dir("${TF_DIR}") {
+                    script {
+                        def WEB_IP = sh(
+                            script: "terraform output -raw web_public_ip",
+                            returnStdout: true
+                        ).trim()
+
+                        sh """
+                        echo "Checking Web Server..."
+                        curl -I http://${WEB_IP} || true
+                        """
+                    }
+                }
             }
         }
     }
