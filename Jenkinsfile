@@ -4,7 +4,7 @@ pipeline {
     environment {
         TF_DIR      = 'terraform'
         ANSIBLE_DIR = 'ansible'
-        AWS_DEFAULT_REGION = 'us-east-1'
+        AWS_DEFAULT_REGION = 'ap-south-1'
     }
 
     options {
@@ -28,14 +28,11 @@ pipeline {
 
         stage('Terraform Deploy') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    dir("${TF_DIR}") {
+                dir("${TF_DIR}") {
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+                    ]) {
                         sh '''
-                        export AWS_DEFAULT_REGION=us-east-1
-
                         terraform init -reconfigure
                         terraform validate
                         terraform apply -auto-approve -var-file=terraform.tfvars
@@ -58,9 +55,6 @@ pipeline {
                             script: "terraform output -raw app_instance_id",
                             returnStdout: true
                         ).trim()
-
-                        echo "WEB_ID=${env.WEB_ID}"
-                        echo "APP_ID=${env.APP_ID}"
                     }
                 }
             }
@@ -78,9 +72,11 @@ ${env.APP_ID}
 
 [all:vars]
 ansible_connection=amazon.aws.aws_ssm
-ansible_region=us-east-1
-ansible_aws_ssm_bucket_name=my-ssm-ansible-bucket
 ansible_user=ec2-user
+ansible_aws_ssm_region=ap-south-1
+ansible_remote_tmp=/tmp
+ansible_shell_type=sh
+ansible_aws_ssm_bucket_name=guru-3-tier
 """
                 }
             }
@@ -89,19 +85,11 @@ ansible_user=ec2-user
         stage('Run Ansible') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
                 ]) {
                     sh '''
-                    export AWS_DEFAULT_REGION=us-east-1
-
-                    ansible-playbook -vvv \
-                    -i ${WORKSPACE}/ansible/inventory.ini \
-                    ${WORKSPACE}/ansible/web.yml
-
-                    ansible-playbook -vvv \
-                    -i ${WORKSPACE}/ansible/inventory.ini \
-                    ${WORKSPACE}/ansible/app.yml
+                    ansible-playbook -i ${WORKSPACE}/ansible/inventory.ini ${WORKSPACE}/ansible/web.yml
+                    ansible-playbook -i ${WORKSPACE}/ansible/inventory.ini ${WORKSPACE}/ansible/app.yml
                     '''
                 }
             }
