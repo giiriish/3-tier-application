@@ -1,4 +1,3 @@
-
 ########################################
 # WEB INSTANCE
 ########################################
@@ -13,7 +12,8 @@ resource "aws_instance" "web" {
 
   associate_public_ip_address = true
 
-  iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
+  # ✅ Attach existing IAM Role (Instance Profile)
+  iam_instance_profile = "3-tier-role"
 
   tags = {
     Name = "web-tier"
@@ -34,7 +34,8 @@ resource "aws_instance" "app" {
 
   associate_public_ip_address = false
 
-  iam_instance_profile = aws_iam_instance_profile.ssm_profile.name
+  # ✅ Attach existing IAM Role (Instance Profile)
+  iam_instance_profile = "3-tier-role"
 
   tags = {
     Name = "app-tier"
