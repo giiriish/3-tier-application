@@ -1,8 +1,8 @@
 [web]
-i-0c9245da68b8aa964
+i-0ecd671128f777a12
 
 [app]
-i-0ecd671128f777a12
+i-0c9245da68b8aa964
 
 [all:vars]
 ansible_connection=amazon.aws.aws_ssm
