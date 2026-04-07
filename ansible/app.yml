@@ -3,7 +3,6 @@
   become: yes
 
   tasks:
-
     - name: Update packages
       dnf:
         name: "*"
